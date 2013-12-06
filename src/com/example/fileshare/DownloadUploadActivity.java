@@ -5,13 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -263,12 +260,6 @@ public class DownloadUploadActivity extends Activity {
                     break;
                 }
                 break;
-            case MESSAGE_WRITE:
-                //byte[] writeBuf = (byte[]) msg.obj;
-                // construct a string from the buffer
-                //String writeMessage = new String(writeBuf);
-                //Log.d(TAG, "Sent: " + writeMessage);
-                break;
             case MESSAGE_READ:
                 byte[] readBuf = (byte[]) msg.obj;
                 // construct a string from the valid bytes in the buffer
@@ -313,12 +304,7 @@ public class DownloadUploadActivity extends Activity {
     	private FileOutputStream mFileOutStream;
     	private FileInputStream mFileInStream;
     	
-    	private HashMap<Integer, byte[]> mSeqMap;
-    	private HashMap<Integer, Integer> mLenMap;
-    	private int mCurrSeq;
-    	
     	private static final int BLOCK_SIZE = 4096;
-    	private byte[] buf = new byte[BLOCK_SIZE + 4];
     	
     	public P2PFile(String fileName) {
     		mFileName = fileName;
@@ -337,15 +323,12 @@ public class DownloadUploadActivity extends Activity {
     	public P2PFile(String fileName, int fileSize) {
     		mFileName = fileName;
     		mFileSize = fileSize;
-    		mSeqMap = new HashMap<Integer, byte[]>();
-    		mLenMap = new HashMap<Integer, Integer>();
-    		mCurrSeq = 0;
     		mBytesWritten = 0;
     		try {
     			File mFile = new File(FILE_PREFIX + mFileName);
     			mFile.createNewFile();
     			mFileOutStream = new FileOutputStream(mFile);
-				Log.d(TAG, "Created file "+ mFileName);
+				if (D) Log.d(TAG, "Created file "+ mFileName);
 			} catch (FileNotFoundException e) {
 				Log.d(TAG, "Failed to create file "+ mFileName);
 			} catch (IOException e) {
@@ -354,72 +337,47 @@ public class DownloadUploadActivity extends Activity {
     	}
     	
     	public synchronized void writeToFile(byte[] readBuf, int start, int len) {
-    		//if (mFileOutStream != null && mState == DOWNLOADING) {
-    			ByteBuffer b = ByteBuffer.wrap(readBuf, 0, 4);
-    			int seq = b.getInt(0);
-    			if (mCurrSeq == seq) {
-	    			try {
-	    				mFileOutStream.write(readBuf, start+4, len-4);
-	    				mBytesWritten += len-4;
-	    				mCurrSeq++;
-	    				
-	    				while (mSeqMap.containsKey(mCurrSeq)) {
-	    					mFileOutStream.write(mSeqMap.get(mCurrSeq), 4, mLenMap.get(mCurrSeq)-4);
-		    				mBytesWritten += mLenMap.get(mCurrSeq)-4;
-		    				mSeqMap.remove(mCurrSeq);
-		    				mLenMap.remove(mCurrSeq);
-		    				mCurrSeq++;
-	    				}
-	    				
-	    				//Log.d(TAG, "Wrote " + mBytesWritten + " bytes");
-	    				Log.d(TAG, "Wrote seq " + mCurrSeq);
-	    				
-	    				if (mBytesWritten == mFileSize) {
-	    					mState = WAITING_FOR_ACTION;
-	    					mDownloadState = DOWNLOADING_FILE_INFO;
-	    					mFileOutStream.close();
-	    					Toast.makeText(getApplicationContext(), "Finished writing file.",
-	                                Toast.LENGTH_SHORT).show();
-	    				}
-	    				//mDownloadBar.setProgress((int)((double)mBytesWritten/(double)mFileSize));
-	    			} catch (IOException e) {
-	    				// TODO Auto-generated catch block
-	    				e.printStackTrace();
-	    			}
-    			} else {
-    				mSeqMap.put(seq, readBuf);
-    				mLenMap.put(seq, len);
-    			}
-    		//}
+    		if (mFileOutStream != null && mState == DOWNLOADING) {
+				try {
+					mFileOutStream.write(readBuf, 0, len);
+					mBytesWritten += len;
+					
+					if (D) Log.d(TAG, "Wrote " + mBytesWritten + " bytes");
+					
+					if (mBytesWritten == mFileSize) {
+						mState = WAITING_FOR_ACTION;
+						mDownloadState = DOWNLOADING_FILE_INFO;
+						mFileOutStream.close();
+						Toast.makeText(getApplicationContext(), "Finished writing file.",
+	                            Toast.LENGTH_LONG).show();
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
     	}
     	
     	public void transferFile() {
-    		// send header
+    		// Send head with file name and size
     		StringBuilder header = new StringBuilder();
     		header.append("<>"+mFileName+":::"+mFileSize+"<>");
     		mChatService.write(header.toString().getBytes());
     		
-    		int count = 0;
-    		ByteBuffer b = ByteBuffer.allocate(BLOCK_SIZE + 4);
+    		// Read in the requested file and send to peer
     		while (mBytesWritten != mFileSize) {
     			try {
-    				b.putInt(0, count);
-					int read = mFileInStream.read(b.array(), 4, BLOCK_SIZE);
-					mChatService.write(b.array(), 0, read + 4);
+    				byte[] b = new byte[BLOCK_SIZE];
+					int read = mFileInStream.read(b, 0, BLOCK_SIZE);
+					mChatService.write(b, 0, read);
 					mBytesWritten += read;
-					count++;
-					//mUploadBar.setProgress((int)((double)mBytesWritten/(double)mFileSize));
-					Thread.sleep(30);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
     		}
     		Toast.makeText(getApplicationContext(), "Finished transferring file.",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_LONG).show();
     	}
     }
 }

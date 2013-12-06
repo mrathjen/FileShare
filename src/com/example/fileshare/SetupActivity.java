@@ -1,8 +1,5 @@
 package com.example.fileshare;
 
-import java.io.File;
-import java.io.IOException;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -57,7 +54,7 @@ public class SetupActivity extends Activity {
 	private ArrayAdapter<String> mNewDevicesArrayAdapter;
 	
 	private String mConnectedDeviceName;
-	private String FILE_PREFIX = "/storage/emulated/0/Music/";
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -99,9 +96,6 @@ public class SetupActivity extends Activity {
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         this.registerReceiver(mReceiver, filter);
 
-        // Get a set of currently paired devices
-        //Set<BluetoothDevice> pairedDevices = mBtAdapter.getBondedDevices();
-
         // If the adapter is null, then Bluetooth is not supported
         if (mBtAdapter == null) {
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
@@ -139,9 +133,6 @@ public class SetupActivity extends Activity {
         // Indicate scanning in the title
         setProgressBarIndeterminateVisibility(true);
         setTitle(R.string.scanning);
-
-        // Turn on sub-title for new devices
-        //findViewById(R.id.title_new_devices).setVisibility(View.VISIBLE);
 
         // If we're already discovering, stop it
         if (mBtAdapter.isDiscovering()) {

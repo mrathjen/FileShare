@@ -491,12 +491,13 @@ public class BluetoothCommService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
             int bytes;
 
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
+                	byte[] buffer = new byte[1024];
+                	
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
 
@@ -520,10 +521,6 @@ public class BluetoothCommService {
         public void write(byte[] buffer, int start, int len) {
             try {
                 mmOutStream.write(buffer, start, len);
-
-                // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(SetupActivity.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
