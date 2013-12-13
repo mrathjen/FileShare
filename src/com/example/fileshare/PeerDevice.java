@@ -4,9 +4,17 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Abstracts a peer device by storing relevant information.
+ * @author mtrathjen08
+ *
+ */
 public class PeerDevice {
+	// Device name
 	private String mDeviceName;
+	// List of peer files
 	private List<String> mPeerFiles;
+	// List of client files
 	private List<String> mClientFiles;
 	
 	public PeerDevice() {
@@ -14,6 +22,8 @@ public class PeerDevice {
 		mPeerFiles = new LinkedList<String>();
 		mClientFiles = new LinkedList<String>();
 	}
+	
+	// Get and Set functions for fields.
 	
 	public void setDeviceName(String name) {
 		mDeviceName = name;

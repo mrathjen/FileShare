@@ -22,7 +22,13 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
+/**
+ * Discovers the Bluetooth devices in the proximity and adds to the list all
+ * currently paired devices. User can select one of the devices to connect with
+ * moves to the UploadDownload activity to start transferring files.
+ * @author mtrathjen08
+ *
+ */
 public class SetupActivity extends Activity {
 	
 	private static final String TAG = "SetupActivity";
@@ -47,12 +53,16 @@ public class SetupActivity extends Activity {
 	// 0 as input to discovery makes it always discoverable
 	private static final int DISCOVERY_DURATION = 15;
 	
+	// System Bluetooth adapter.
 	private BluetoothAdapter mBtAdapter;
 
+	// Service that allows communication with the peer
 	private BluetoothCommService mChatService;
 	
+	// The disovered and paired list of devices
 	private ArrayAdapter<String> mNewDevicesArrayAdapter;
 	
+	// Currently connected device name
 	private String mConnectedDeviceName;
 	
 	@Override
@@ -84,9 +94,6 @@ public class SetupActivity extends Activity {
         ListView newDevicesListView = (ListView) findViewById(R.id.listView_newDevices);
         newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
         newDevicesListView.setOnItemClickListener(mDeviceClickListener);
-        
-        for (BluetoothDevice device: mBtAdapter.getBondedDevices()) 
-        	mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -96,6 +103,10 @@ public class SetupActivity extends Activity {
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         this.registerReceiver(mReceiver, filter);
 
+        // Filter to get bluetooth
+        filter = new IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
+        this.registerReceiver(mReceiver, filter);
+        
         // If the adapter is null, then Bluetooth is not supported
         if (mBtAdapter == null) {
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
@@ -107,6 +118,8 @@ public class SetupActivity extends Activity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         } else {
+        	for (BluetoothDevice device: mBtAdapter.getBondedDevices()) 
+            	mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
         	enableDiscovery();
         }
 	}
@@ -160,6 +173,8 @@ public class SetupActivity extends Activity {
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
                 // Bluetooth is now enabled, so discover devices
+            	for (BluetoothDevice device: mBtAdapter.getBondedDevices()) 
+                	mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
             	enableDiscovery();
             } else {
                 // User did not enable Bluetooth or an error occured
@@ -172,7 +187,9 @@ public class SetupActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 	}
 	
-	// The on-click listener for all devices in the ListViews
+	/**
+	 * When a user selects a device, start the connection process.
+	 */
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
             // Cancel discovery because it's costly and we're about to connect
@@ -186,6 +203,9 @@ public class SetupActivity extends Activity {
         }
     };
 	
+    /**
+     * Start the discovery process for the device.
+     */
 	private void enableDiscovery() {
 		Intent discoverableIntent = new
 				Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -193,6 +213,11 @@ public class SetupActivity extends Activity {
 		startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
 	}
 	
+	/**
+	 * Connect to the device with address 'address' using a secure connection.
+	 * @param address Address of peer.
+	 * @param secure True for secure connection, false otherwise.
+	 */
 	private void connectDevice(String address, boolean secure) {
         // Go to the connection activity
         Intent connectIntent = new Intent(this, DownloadUploadActivity.class);
@@ -207,8 +232,10 @@ public class SetupActivity extends Activity {
 		return true;
 	}
 	
-	// The BroadcastReceiver that listens for discovered devices and
-    // changes the title when discovery is finished
+	/**
+	 * The BroadcastReceiver that listens for discovered devices and
+	 * changes the title when discovery is finished
+	 */
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -230,11 +257,18 @@ public class SetupActivity extends Activity {
                     String noDevices = getResources().getText(R.string.none_found).toString();
                     mNewDevicesArrayAdapter.add(noDevices);
                 }
+            } else if (BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
+            	String s = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
+            	if (s.equals(BluetoothAdapter.STATE_CONNECTED) || s.equals(BluetoothAdapter.STATE_CONNECTING)) {
+            		connectDevice(mConnectedDeviceName, true);
+            	}
             }
         }
     };
 
-    // The Handler that gets information back from the BluetoothChatService
+    /**
+     * The Handler that gets information back from the BluetoothChatService
+     */
     private final Handler mHandler = new Handler() {
 		@Override
         public void handleMessage(Message msg) {
@@ -248,6 +282,7 @@ public class SetupActivity extends Activity {
                     break;
                 case BluetoothCommService.STATE_CONNECTING:
                     setTitle(R.string.title_connecting);
+                    connectDevice(mConnectedDeviceName, true);
                     break;
                 case BluetoothCommService.STATE_LISTEN:
                 case BluetoothCommService.STATE_NONE:
@@ -278,4 +313,13 @@ public class SetupActivity extends Activity {
             }
         }
     };
+    
+    private final BroadcastReceiver btReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			
+		}
+    };
+
 }

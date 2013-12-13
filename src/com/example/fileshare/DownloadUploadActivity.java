@@ -26,6 +26,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/**
+ * This activity is a result of the connection made with the peer, which shows the 
+ * list of clients music files and the files sent from the user. The user can 
+ * select a peer song to start the download.
+ * @author mtrathjen08
+ *
+ */
+
 /*
  * 		Peer1 						Peer2
  * 		Send Library ------------->	
@@ -67,9 +75,6 @@ public class DownloadUploadActivity extends Activity {
     public static final int DOWNLOADING_FILE_CONTENT= 1;
     
 	public static final String ADDRESS = "ADDRESS";
-	
-	// Directory of library files
-	//private static final String FILE_PREFIX = "/data/data/com.example.fileshare/files/";
 
 	private BluetoothCommService mChatService;
 	
@@ -216,8 +221,11 @@ public class DownloadUploadActivity extends Activity {
 	// The on-click listener for all devices in the ListViews
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
-        	String fileName = ((TextView) v).getText().toString();
-        	sendDownloadRequest(fileName);
+        	if (mState != DOWNLOADING) {
+        		mState = DOWNLOADING;
+	        	String fileName = ((TextView) v).getText().toString();
+	        	sendDownloadRequest(fileName);
+        	}
         }
     };
     
@@ -231,7 +239,6 @@ public class DownloadUploadActivity extends Activity {
 		sb.append(fileName);
 		sb.append("<>");
 		mChatService.write(sb.toString().getBytes());
-		mState = DOWNLOADING;
 	}
 
 	// The Handler that gets information back from the BluetoothChatService
@@ -297,6 +304,12 @@ public class DownloadUploadActivity extends Activity {
         }
     };
 	
+    /**
+     * Abstraction for a peer and user file that will be transferred to the peer
+     * or written by the user.
+     * @author mtrathjen08
+     *
+     */
     public class P2PFile {
     	private String mFileName;
     	private long mFileSize;
@@ -306,6 +319,10 @@ public class DownloadUploadActivity extends Activity {
     	
     	private static final int BLOCK_SIZE = 4096;
     	
+    	/**
+    	 * Create a file for transfer to peer.
+    	 * @param fileName
+    	 */
     	public P2PFile(String fileName) {
     		mFileName = fileName;
     		mBytesWritten = 0;
@@ -320,6 +337,11 @@ public class DownloadUploadActivity extends Activity {
     		
     	}
     	
+    	/**
+    	 * Create a local user file.
+    	 * @param fileName 
+    	 * @param fileSize
+    	 */
     	public P2PFile(String fileName, int fileSize) {
     		mFileName = fileName;
     		mFileSize = fileSize;
@@ -336,6 +358,13 @@ public class DownloadUploadActivity extends Activity {
 			}
     	}
     	
+    	/**
+    	 * Write len bytes from readBuf starting at index start, to the underlying
+    	 * file.
+    	 * @param readBuf Bytes of data to write.
+    	 * @param start Starting index of the data buffer.
+    	 * @param len Number of bytes to write.
+    	 */
     	public synchronized void writeToFile(byte[] readBuf, int start, int len) {
     		if (mFileOutStream != null && mState == DOWNLOADING) {
 				try {
@@ -358,6 +387,9 @@ public class DownloadUploadActivity extends Activity {
 			}
     	}
     	
+    	/**
+    	 * Send the underlying file to the peer.
+    	 */
     	public void transferFile() {
     		// Send head with file name and size
     		StringBuilder header = new StringBuilder();

@@ -1,0 +1,45 @@
+Mark Rathjen (mrathjen)
+CSE461 Extra Credit
+FileShare
+
+1. For the extra credit project the system that I wanted to build was a p2p music
+   sharing application. The idea was that two devices running the application could
+   discover and connect to one another. Once the connection was make each peer would
+   have access to the other's music library, and could choose one of the peer songs
+   to download to their own library. The discovery and communication process would
+   happen over Bluetooth.
+
+2. As the description above shows this application wasn't meant to be too substantial
+   and my final product does implement the functionality described above properly.
+   The devices have to discover and pair with one another before the start of the 
+   application. Then each the opening screen of the app shows all paired devices
+   which each peer can then select to make the connection with the device. Once
+   the connections made the music selection of each peer is sent to the other and 
+   displayed on the screen. The user can then select the song of interest and the 
+   song is downloaded and added to their library.
+
+3. In the implementation of the project there were two activities and one to two 
+   parts in each activity. The first activity was the discovery activity that made 
+   sure the client had Bluetooth enabled and turned it on if not. Then it used
+   the system's BluetoothAdapter to retreive all the paired devices and displayed
+   them to the user. When the user selected one of the devices it started the next
+   activity with the device address stored in the intent passed. When the next 
+   activity started it created the BluetoothCommService, which contains several parts
+   for the Bluetooth connection establishment and communication process. For the 
+   connection establishment process a ConnectingThread is created to created a 
+   channel between the two devices. Once the channel is created a ConnectThread is
+   created which contains the sockets used to push and receive information from the
+   peer. The BluetoothCommService abstracts the communication with the peer device
+   to make the interaction more intuitive from the app's perspective. When the 
+   connection is made both peers send their library listings to the other peer 
+   which gets displayed to the user. When the user clicks on a song the peer sends
+   a transfer request to the other peer, who then begins the transfer of the file.
+   The originating peer then writes the received data to a created file on the user's
+   device. Both of the peers can interact simultaneously. A disconnect button allows
+   the two peers to then disconnect from one another and discover other peers.
+
+4. There weren't many interesting design decisions in this project as I followed 
+   the general network thread model and the Bluetooth connection state management
+   suggested by the Android Development Tutorials.
+   
+   

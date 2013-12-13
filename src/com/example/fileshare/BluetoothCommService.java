@@ -79,25 +79,58 @@ public class BluetoothCommService {
     	return mService;
     }
     
+    /**
+     * Set the handler that will receiver callbacks from this service.
+     * @param handler Handler to receiver callbacks.
+     */
     public synchronized void registerHandler(Handler handler) {
     	mHandler = handler;
     }
     
+    /**
+     * Set the peer device to connect with.
+     * @param device Device to connect with.
+     */
     public synchronized void setPeerDevice(PeerDevice device) {
     	mCurrPeer = device;
     }
+    
+    /**
+     * Set the name of the connection device.
+     * @param name Name of connected device.
+     */
     public synchronized void setDeviceName(String name) {
     	mCurrPeer.setDeviceName(name);
     }
+    
+    /**
+     * Return the list of peer files sent from the peer.
+     * @return List of peer files.
+     */
     public synchronized List<String> getPeerFiles() {
     	return mCurrPeer.getPeerFiles();
     }
+    
+    /**
+     * Set the list of peer files sent from the peer.
+     * @param files List of files sent from peer.
+     */
     public synchronized void setPeerFiles(String[] files) {
     	mCurrPeer.setPeerFiles(files);
     }
+    
+    /**
+     * Set the list of client files to send to peer.
+     * @param files List of client files.
+     */
     public synchronized void setClientFiles(String[] files) {
     	mCurrPeer.setClientFiles(files);
     }
+    
+    /**
+     * Return the connected peer device.
+     * @return Connected peer device.
+     */
     public synchronized PeerDevice getPeerDevice() {
     	return mCurrPeer;
     }
